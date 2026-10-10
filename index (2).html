@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Financiero 2022 — Análisis de Ventas</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#faf9f5; --paper-2:#f2f1ea; --ink:#1a241f; --muted:#6b6f66;
+    --accent:#3b7a57; --accent-soft:#e7efe9; --risk:#9c4221; --risk-soft:#f4e6de;
+    --line:#dad7cd; --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:16px;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans',Arial,sans-serif; line-height:1.55;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:48px 24px 80px;}
+  h1,h2,h3{font-family:'Source Serif 4',Georgia,serif; font-weight:600; margin:0;}
+  .num{font-family:'IBM Plex Mono',monospace;}
+  header.top{border-bottom:1px solid var(--line); padding-bottom:28px; margin-bottom:40px;}
+  header.top h1{font-size:2.1rem; letter-spacing:-0.01em;}
+  header.top p{color:var(--muted); max-width:640px; margin-top:10px; font-size:0.98rem;}
+  header.top .meta{display:flex; gap:24px; margin-top:18px; flex-wrap:wrap; font-size:0.85rem; color:var(--muted);}
+  header.top .meta b{color:var(--ink); font-family:'IBM Plex Mono',monospace; font-weight:500;}
+
+  section{margin-bottom:56px;}
+  section > h2{font-size:1.4rem; margin-bottom:6px;}
+  section > .sub{color:var(--muted); font-size:0.92rem; max-width:680px; margin-bottom:22px;}
+
+  .note{background:var(--accent-soft); border-left:3px solid var(--accent); padding:14px 18px; font-size:0.88rem; color:#2b3d33; border-radius:2px; margin-top:18px;}
+  .note.risk{background:var(--risk-soft); border-left-color:var(--risk); color:#4a281a;}
+  .note b{font-weight:600;}
+
+  .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px;}
+  .kpi{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:18px 16px;}
+  .kpi .label{font-size:0.8rem; color:var(--muted);}
+  .kpi .value{font-family:'IBM Plex Mono',monospace; font-size:1.5rem; font-weight:600; margin-top:6px;}
+  .kpi .value small{font-size:0.9rem; font-weight:400; color:var(--muted);}
+
+  .chart-card{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:20px; }
+  .chart-card canvas{max-height:340px;}
+
+  table{width:100%; border-collapse:collapse; font-size:0.9rem;}
+  thead th{text-align:left; font-weight:500; color:var(--muted); border-bottom:1px solid var(--line); padding:8px 10px; font-size:0.78rem;}
+  tbody td{padding:9px 10px; border-bottom:1px solid var(--paper-2);}
+  tbody tr:hover{background:var(--paper-2);}
+  td.num, th.num{font-family:'IBM Plex Mono',monospace; text-align:right;}
+  .bar-cell{display:flex; align-items:center; gap:8px;}
+  .bar-track{flex:1; background:var(--paper-2); border-radius:3px; height:7px; overflow:hidden;}
+  .bar-fill{background:var(--accent); height:100%; border-radius:3px;}
+  .bar-fill.warn{background:var(--risk);}
+
+  .two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:20px;}
+  @media (max-width:820px){ .two-col{grid-template-columns:1fr;} }
+
+  .tag{display:inline-block; font-size:0.72rem; font-family:'IBM Plex Mono',monospace; padding:2px 7px; border-radius:3px; background:var(--accent-soft); color:#2b3d33; margin-left:6px;}
+  .tag.warn{background:var(--risk-soft); color:#4a281a;}
+
+  footer{border-top:1px solid var(--line); padding-top:20px; color:var(--muted); font-size:0.82rem;}
+  a{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>Panel financiero — Ventas 2022</h1>
+    <p>Análisis de 1.901 movimientos de venta de la compañía comercial de tecnología (celulares, portátiles y equipos de escritorio), del 1 de enero al 14 de diciembre de 2022.</p>
+    <div class="meta">
+      <span>Periodo: <b>Ene–Dic 2022</b></span>
+      <span>Registros: <b>1.901</b></span>
+      <span>Clientes: <b>4</b></span>
+      <span>Productos: <b>21</b></span>
+      <span>Ciudades: <b>4</b></span>
+    </div>
+  </header>
+
+  <section id="kpi">
+    <h2>Resultado del periodo</h2>
+    <p class="sub">Los seis indicadores que resumen el año: cuánto se vendió, a qué costo, y qué tan rentable fue cada peso vendido.</p>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="label">Ventas totales</div><div class="value">$103.805 <small>M</small></div></div>
+      <div class="kpi"><div class="label">Costo total</div><div class="value">$87.546 <small>M</small></div></div>
+      <div class="kpi"><div class="label">Margen bruto</div><div class="value">$16.260 <small>M</small></div></div>
+      <div class="kpi"><div class="label">Margen bruto %</div><div class="value">15,7%</div></div>
+      <div class="kpi"><div class="label">Unidades vendidas</div><div class="value">24.541</div></div>
+      <div class="kpi"><div class="label">Ticket promedio</div><div class="value">$54,6 <small>M</small></div></div>
+    </div>
+    <div class="note">Se calcula <b>Ventas = Precio × Cantidad</b> y <b>Margen = (Precio − Costo) × Cantidad</b>, tal como ya venían las columnas Ventas e Ingresos del archivo original. Este bloque es el punto de partida obligado de cualquier lectura financiera: fija la escala del negocio antes de mirar tendencias o segmentos.</div>
+  </section>
+
+  <section id="tendencia">
+    <h2>Tendencia mensual y pronóstico</h2>
+    <p class="sub">Ventas y margen mes a mes, con una proyección a tres meses (regresión lineal) para enero–marzo de 2023.</p>
+    <div class="chart-card">
+      <canvas id="chartTendencia"></canvas>
+    </div>
+    <div class="note risk"><b>Hallazgo no solicitado pero clave:</b> la pendiente de la regresión sobre los 11 meses completos es negativa (≈ −$130 M por mes, −1,4% mensual promedio). Diciembre está incompleto (14 de 31 días) y no debe compararse directo con los demás meses. Con la tendencia actual, el pronóstico para el primer trimestre de 2023 es decreciente frente al promedio 2022 — vale la pena confirmar si es estacionalidad de fin de año o una caída real de demanda antes de fijar presupuesto.</div>
+  </section>
+
+  <section id="categorias">
+    <h2>Rentabilidad por categoría y marca</h2>
+    <p class="sub">No toda la venta deja el mismo margen. Aquí se compara volumen de venta contra rentabilidad real por línea de producto.</p>
+    <div class="two-col">
+      <div class="chart-card"><canvas id="chartCategoria"></canvas></div>
+      <div class="chart-card" style="overflow:auto;">
+        <table>
+          <thead><tr><th>Marca</th><th class="num">Ventas ($M)</th><th class="num">Margen %</th></tr></thead>
+          <tbody id="tablaMarca"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="note">Portátiles genera el 45% de la venta y el margen más alto (18,8%); Pc de mesa es el volumen más débil en rentabilidad (12,2%). Lenovo, Janus y Acer son las marcas con mejor margen relativo — no necesariamente las de mayor venta. <b>Producto a revisar:</b> Galaxy S23 vende $3.193 M pero deja apenas 2,4% de margen, casi en punto de equilibrio; conviene revisar su precio o su costo de compra.</div>
+  </section>
+
+  <section id="clientes">
+    <h2>Concentración de clientes</h2>
+    <p class="sub">Solo existen 4 clientes en toda la base. Esto es información no solicitada pero determinante para el riesgo del negocio.</p>
+    <table>
+      <thead><tr><th>Cliente</th><th>Ciudad</th><th>Pago habitual</th><th class="num">Ventas ($M)</th><th class="num">% del total</th><th class="num">% acumulado</th></tr></thead>
+      <tbody>
+        <tr><td>Asociados LTDA</td><td>Bogotá</td><td>Crédito</td><td class="num">43.740</td><td class="num">42,1%</td><td class="num">42,1%</td></tr>
+        <tr><td>Smart S.A.S</td><td>Medellín</td><td>Crédito</td><td class="num">20.886</td><td class="num">20,1%</td><td class="num">62,3%</td></tr>
+        <tr><td>FullStark</td><td>Bucaramanga</td><td>Contado</td><td class="num">19.664</td><td class="num">18,9%</td><td class="num">81,2%</td></tr>
+        <tr><td>Distribuidora Oriente</td><td>Cali</td><td>Crédito</td><td class="num">19.515</td><td class="num">18,8%</td><td class="num">100,0%</td></tr>
+      </tbody>
+    </table>
+    <div class="note risk"><b>Riesgo de concentración:</b> el índice Herfindahl-Hirschman (HHI) de clientes es <b>≈2.887</b> — por encima de 2.500 se considera un mercado altamente concentrado. Un solo cliente (Asociados LTDA) explica el 42% de toda la venta del año. Además, cada cliente usa siempre la misma ciudad, transportadora y método de pago: son en realidad atributos del cliente, no variables independientes de cada venta. Perder a Asociados LTDA equivaldría a perder casi la mitad de los ingresos: es la alerta más importante de todo el análisis.</div>
+  </section>
+
+  <section id="equipo">
+    <h2>Actividad por área interna</h2>
+    <p class="sub">La columna Empleado corresponde a quién registró el movimiento, no a un vendedor externo — las áreas van desde Compras hasta Logística.</p>
+    <div style="overflow:auto;">
+    <table>
+      <thead><tr><th>Empleado</th><th>Área</th><th class="num">Ventas ($M)</th><th class="num">Margen ($M)</th><th class="num">Margen %</th></tr></thead>
+      <tbody id="tablaEmpleado"></tbody>
+    </table>
+    </div>
+    <div class="note">La actividad está razonablemente repartida (entre $9.219 M y $12.469 M por persona, sin outliers extremos), lo que sugiere que el registro de ventas no depende de una sola persona clave. Es información de continuidad operativa: bajo riesgo de "bus factor" en el proceso de venta.</div>
+  </section>
+
+  <section id="ratios">
+    <h2>Ratios e indicadores financieros</h2>
+    <p class="sub">Los indicadores estándar para leer la salud del negocio de un vistazo.</p>
+    <div style="overflow:auto;">
+    <table>
+      <thead><tr><th>Indicador</th><th class="num">Valor</th><th>Qué mide</th></tr></thead>
+      <tbody>
+        <tr><td>Margen bruto sobre ventas</td><td class="num">15,66%</td><td>Rentabilidad por cada peso vendido</td></tr>
+        <tr><td>Margen sobre costo (markup)</td><td class="num">18,57%</td><td>Cuánto se agrega sobre el costo de compra</td></tr>
+        <tr><td>Ticket promedio por transacción</td><td class="num">$54,6 M</td><td>Tamaño típico de una venta (negocio B2B/mayorista)</td></tr>
+        <tr><td>Precio unitario promedio</td><td class="num">$4,23 M</td><td>Precio de venta promedio por unidad</td></tr>
+        <tr><td>Costo unitario promedio</td><td class="num">$3,57 M</td><td>Costo de compra promedio por unidad</td></tr>
+        <tr><td>Margen por unidad</td><td class="num">$0,66 M</td><td>Ganancia bruta promedio por unidad vendida</td></tr>
+        <tr><td>% de ventas a crédito</td><td class="num">81,1%</td><td>Exposición a cobro futuro / riesgo de cartera</td></tr>
+        <tr><td>HHI de concentración de clientes</td><td class="num">2.887</td><td>Riesgo de dependencia de pocos clientes (&gt;2.500 = alto)</td></tr>
+        <tr><td>Crecimiento mensual promedio (tendencia)</td><td class="num">−1,4%</td><td>Pendiente de la regresión de ventas mensuales</td></tr>
+        <tr><td>Rotación mensual de unidades</td><td class="num">≈2.140 u./mes</td><td>Ritmo de venta en unidades</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="note">Estos ratios combinan lo pedido (rentabilidad, rotación) con indicadores adicionales de riesgo (cartera a crédito, concentración) que normalmente no se calculan a simple vista pero que un comité financiero revisaría primero.</div>
+  </section>
+
+  <section id="calidad">
+    <h2>Calidad de datos</h2>
+    <p class="sub">Antes de confiar en cualquier reporte automatizado sobre esta base, conviene resolver estas inconsistencias en el origen.</p>
+    <table>
+      <thead><tr><th>Campo</th><th>Inconsistencia encontrada</th><th>Por qué importa</th></tr></thead>
+      <tbody>
+        <tr><td>Pago del cliente</td><td>"Crédito" y "crédito" con distinta may/min</td><td>Duplica categorías en tablas dinámicas y filtros</td></tr>
+        <tr><td>Tipo cliente</td><td>"A" con espacio final ("A ")</td><td>Excel/BI la trata como categoría distinta de "A"</td></tr>
+        <tr><td>Tipo (categoría)</td><td>"Celuar" en vez de "Celular"</td><td>Dificulta búsquedas y quiebra reportes por texto</td></tr>
+        <tr><td>Marca</td><td>"Samsum" en vez de "Samsung"</td><td>Revisar si es un error de digitación sistemático</td></tr>
+        <tr><td>Fecha</td><td>Diciembre solo tiene 14 de 31 días</td><td>Cualquier comparación mensual sin ajustar subestima diciembre</td></tr>
+        <tr><td>Columnas U–W del original</td><td>Listas sueltas de productos/marcas sin relación con las filas de venta</td><td>Son un catálogo de referencia, no datos transaccionales; se excluyeron del análisis</td></tr>
+      </tbody>
+    </table>
+    <div class="note">Estas correcciones ya se aplicaron de forma silenciosa en los cálculos de este panel (por ejemplo, unificando "Crédito"/"crédito"); se documentan aquí para que se corrijan también en el sistema de origen y no vuelvan a aparecer en la próxima carga de datos.</div>
+  </section>
+
+  <footer>
+    Generado a partir de <span class="num">BaseDatos.xlsx</span> (1.901 movimientos, ene–dic 2022). Página estática, sin backend — lista para publicar en Netlify. Ver también el libro de Excel adjunto para el detalle con fórmulas.
+  </footer>
+
+</div>
+
+<script>
+const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene 23*','Feb 23*','Mar 23*'];
+const ventasHist = [9739,7667,9140,11046,13800,8077,5986,7802,7381,8689,9979,4499];
+const ventasFcst = [null,null,null,null,null,null,null,null,null,null,9979,4499,8118,7989,7859];
+const margenPct  = [15.9,15.8,14.4,16.4,16.3,14.9,15.8,14.9,16.2,16.0,15.3,15.7,null,null,null];
+
+new Chart(document.getElementById('chartTendencia'), {
+  type:'line',
+  data:{ labels:meses, datasets:[
+    {label:'Ventas ($M)', data:ventasHist, borderColor:'#3b7a57', backgroundColor:'rgba(59,122,87,0.12)', fill:true, tension:0.25, spanGaps:false},
+    {label:'Pronóstico ($M)', data:ventasFcst, borderColor:'#9c4221', borderDash:[5,4], pointStyle:'circle', tension:0.15, fill:false},
+    {label:'Margen %', data:margenPct, yAxisID:'y1', borderColor:'#6b6f66', borderWidth:1.5, pointRadius:2, tension:0.2}
+  ]},
+  options:{
+    responsive:true,
+    interaction:{mode:'index', intersect:false},
+    plugins:{legend:{position:'bottom', labels:{boxWidth:12,font:{family:'IBM Plex Sans',size:11}}}},
+    scales:{
+      y:{title:{display:true,text:'$ Millones'}, grid:{color:'#eeece4'}},
+      y1:{position:'right', min:0, max:30, title:{display:true,text:'Margen %'}, grid:{display:false}},
+      x:{grid:{display:false}}
+    }
+  }
+});
+
+const catLabels = ['Portátil','Celular','Pc de Mesa'];
+const catVentas = [47049,34276,22480];
+const catMargen = [18.8,13.6,12.2];
+new Chart(document.getElementById('chartCategoria'), {
+  type:'bar',
+  data:{ labels:catLabels, datasets:[
+    {label:'Ventas ($M)', data:catVentas, backgroundColor:'#3b7a57', yAxisID:'y', borderRadius:3},
+    {label:'Margen %', data:catMargen, type:'line', yAxisID:'y1', borderColor:'#9c4221', backgroundColor:'#9c4221', tension:0.2, pointRadius:4}
+  ]},
+  options:{
+    responsive:true,
+    plugins:{legend:{position:'bottom', labels:{boxWidth:12,font:{family:'IBM Plex Sans',size:11}}}},
+    scales:{
+      y:{title:{display:true,text:'$ Millones'}, grid:{color:'#eeece4'}},
+      y1:{position:'right', min:0, max:25, title:{display:true,text:'Margen %'}, grid:{display:false}},
+      x:{grid:{display:false}}
+    }
+  }
+});
+
+const marcas = [
+  ['Apple',27792,14.2],['Asus',17324,12.6],['Lenovo',16656,27.6],['Xiaomi',13079,10.5],
+  ['Intel',9281,9.7],['Samsum',8142,11.3],['Janus',4393,22.4],['Acer',4195,24.4],['Vivo',2943,11.5]
+];
+document.getElementById('tablaMarca').innerHTML = marcas.map(([n,v,m])=>{
+  const warn = m < 12 ? ' warn' : '';
+  return `<tr><td>${n}</td><td class="num">${v.toLocaleString('es-CO')}</td>
+    <td class="num"><div class="bar-cell"><span>${m}%</span><div class="bar-track"><div class="bar-fill${warn}" style="width:${Math.min(m*3,100)}%"></div></div></div></td></tr>`;
+}).join('');
+
+const emps = [
+  ['Diego','Compras',12469,1937,15.5],['Matias','Almacén',11001,1631,14.8],['Liliana','Gerencia',10814,1643,15.2],
+  ['Alejandra','Control de calidad',10746,1698,15.8],['Martha','Administración',10489,1599,15.2],
+  ['Juan','Ventas',10240,1671,16.3],['Hernan','Compras',9928,1580,15.9],['Daniela','Despachos',9457,1452,15.4],
+  ['Lina','Ventas',9442,1567,16.6],['Paola','Logística',9219,1481,16.1]
+];
+document.getElementById('tablaEmpleado').innerHTML = emps.map(([n,a,v,g,m])=>
+  `<tr><td>${n}</td><td>${a}</td><td class="num">${v.toLocaleString('es-CO')}</td><td class="num">${g.toLocaleString('es-CO')}</td><td class="num">${m}%</td></tr>`
+).join('');
+</script>
+</body>
+</html>
